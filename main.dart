@@ -1,95 +1,103 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const MeuApp());
+  runApp(const MyApp());
 }
 
-/// Classe principal do aplicativo
-class MeuApp extends StatelessWidget {
-  const MeuApp({super.key});
+// Modelo para Experiência
+class Experiencia {
+  String empresa;
+  String periodo;
+
+  Experiencia({required this.empresa, required this.periodo});
+}
+
+// Modelo para Projeto
+class Projeto {
+  String titulo;
+  String dataPublicacao;
+
+  Projeto({required this.titulo, required this.dataPublicacao});
+}
+
+// Modelo para Escolaridade
+class Escolaridade {
+  String instituicao;
+  String curso;
+
+  Escolaridade({required this.instituicao, required this.curso});
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'App de Perfil',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      home: const TelaPerfil(),
-      debugShowCheckedModeBanner: false,
+      title: 'Aplicativo de Perfil',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: const PerfilScreen(),
     );
   }
 }
 
-/// Tela 1: Perfil do Usuário
-class TelaPerfil extends StatelessWidget {
-  const TelaPerfil({super.key});
+class PerfilScreen extends StatelessWidget {
+  const PerfilScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Meu Perfil'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Meu Perfil')),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Avatar grande centralizado
+          children: <Widget>[
             const CircleAvatar(
               radius: 80,
               backgroundImage: NetworkImage(
-                'images/eukkk.jpeg',
-              ),
-              backgroundColor: Colors.grey,
+                'images/fotoperfil.jpeg',
+              ), // Placeholder de avatar
             ),
             const SizedBox(height: 20),
-            
-            // Nome do usuário
             const Text(
               'Maria Bernardes',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 40),
-            
-            // Botão Experiência
             ElevatedButton(
               onPressed: () {
-                // Navegação para a Tela 2 (Experiência)
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const TelaExperiencia()),
+                  MaterialPageRoute(
+                    builder: (context) => const ExperienciaScreen(),
+                  ),
                 );
               },
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(200, 50),
-              ),
-              child: const Text('Experiência', style: TextStyle(fontSize: 18)),
+              child: const Text('Experiência'),
             ),
-            const SizedBox(height: 15),
-            
-            // Botão Projetos (Sem ação definida no requisito)
+            const SizedBox(height: 10),
             ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(200, 50),
-              ),
-              child: const Text('Projetos', style: TextStyle(fontSize: 18)),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ProjetosScreen(),
+                  ),
+                );
+              },
+              child: const Text('Projetos'),
             ),
-            const SizedBox(height: 15),
-            
-            // Botão Escolaridade (Sem ação definida no requisito)
+            const SizedBox(height: 10),
             ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(200, 50),
-              ),
-              child: const Text('Escolaridade', style: TextStyle(fontSize: 18)),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const EscolaridadeScreen(),
+                  ),
+                );
+              },
+              child: const Text('Escolaridade'),
             ),
           ],
         ),
@@ -98,140 +106,172 @@ class TelaPerfil extends StatelessWidget {
   }
 }
 
-/// Modelo de Dados para Experiência
-class Experiencia {
-  String empresa;
-  String periodo;
-
-  Experiencia({required this.empresa, required this.periodo});
-}
-
-/// Tela 2: Experiência
-class TelaExperiencia extends StatefulWidget {
-  const TelaExperiencia({super.key});
+class ExperienciaScreen extends StatefulWidget {
+  const ExperienciaScreen({super.key});
 
   @override
-  State<TelaExperiencia> createState() => _TelaExperienciaState();
+  State<ExperienciaScreen> createState() => _ExperienciaScreenState();
 }
 
-class _TelaExperienciaState extends State<TelaExperiencia> {
-  // Lista inicial de experiências
+class _ExperienciaScreenState extends State<ExperienciaScreen> {
   final List<Experiencia> _experiencias = [
-    Experiencia(empresa: 'Visux', periodo: '2025 - 2025'),
-    Experiencia(empresa: 'HydroSense', periodo: '2026 - 2026'),
+    Experiencia(empresa: 'redatora', periodo: '2025 - presente'),
+    Experiencia(empresa: 'maquiadora', periodo: '2023 - presente'),
+    Experiencia(empresa: 'manicure', periodo: '2025 - presente'),
   ];
 
-  // Controladores para os campos de texto ao adicionar nova experiência
-  final TextEditingController _empresaController = TextEditingController();
-  final TextEditingController _periodoController = TextEditingController();
+  void _adicionarExperiencia() {
+    setState(() {
+      _experiencias.add(
+        Experiencia(empresa: 'Nova Empresa', periodo: '2023 - Presente'),
+      );
+    });
+  }
 
-  /// Função para remover uma experiência da lista
   void _removerExperiencia(int index) {
     setState(() {
       _experiencias.removeAt(index);
     });
   }
 
-  /// Função para exibir o modal de adicionar nova experiência
-  void _mostrarDialogoAdicionar() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Nova Experiência'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _empresaController,
-                decoration: const InputDecoration(labelText: 'Nome da Empresa'),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Experiência')),
+      body: ListView.builder(
+        itemCount: _experiencias.length,
+        itemBuilder: (context, index) {
+          final experiencia = _experiencias[index];
+          return Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: ListTile(
+              title: Text(experiencia.empresa),
+              subtitle: Text(experiencia.periodo),
+              trailing: IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: () => _removerExperiencia(index),
               ),
-              TextField(
-                controller: _periodoController,
-                decoration: const InputDecoration(labelText: 'Período (ex: 2023 - 2024)'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Fecha o modal sem salvar
-              },
-              child: const Text('Cancelar'),
             ),
-            ElevatedButton(
-              onPressed: () {
-                if (_empresaController.text.isNotEmpty && _periodoController.text.isNotEmpty) {
-                  setState(() {
-                    // Adiciona a nova experiência na lista
-                    _experiencias.add(
-                      Experiencia(
-                        empresa: _empresaController.text,
-                        periodo: _periodoController.text,
-                      ),
-                    );
-                  });
-                  // Limpa os campos
-                  _empresaController.clear();
-                  _periodoController.clear();
-                  Navigator.of(context).pop(); // Fecha o modal
-                }
-              },
-              child: const Text('Adicionar'),
-            ),
-          ],
-        );
-      },
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _adicionarExperiencia,
+        child: const Icon(Icons.add),
+      ),
     );
   }
+}
+
+class ProjetosScreen extends StatefulWidget {
+  const ProjetosScreen({super.key});
 
   @override
-  void dispose() {
-    // Limpa os controladores quando a tela for destruída
-    _empresaController.dispose();
-    _periodoController.dispose();
-    super.dispose();
+  State<ProjetosScreen> createState() => _ProjetosScreenState();
+}
+
+class _ProjetosScreenState extends State<ProjetosScreen> {
+  final List<Projeto> _projetos = [
+    Projeto(titulo: 'Visux', dataPublicacao: '2025-09-10'),
+    Projeto(titulo: 'HydroSense', dataPublicacao: '2026-04-14'),
+  ];
+
+  void _adicionarProjeto() {
+    setState(() {
+      _projetos.add(
+        Projeto(titulo: 'Novo Projeto', dataPublicacao: '2024-04-20'),
+      );
+    });
+  }
+
+  void _removerProjeto(int index) {
+    setState(() {
+      _projetos.removeAt(index);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Experiência'),
-      ),
-      body: _experiencias.isEmpty
-          ? const Center(
-              child: Text(
-                'Nenhuma experiência adicionada.',
-                style: TextStyle(fontSize: 18),
+      appBar: AppBar(title: const Text('Projetos')),
+      body: ListView.builder(
+        itemCount: _projetos.length,
+        itemBuilder: (context, index) {
+          final projeto = _projetos[index];
+          return Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: ListTile(
+              title: Text(projeto.titulo),
+              subtitle: Text(projeto.dataPublicacao),
+              trailing: IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: () => _removerProjeto(index),
               ),
-            )
-          : ListView.builder(
-              itemCount: _experiencias.length,
-              itemBuilder: (context, index) {
-                final exp = _experiencias[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  child: ListTile(
-                    leading: const CircleAvatar(
-                      child: Icon(Icons.work),
-                    ),
-                    title: Text(
-                      exp.empresa,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text(exp.periodo),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _removerExperiencia(index),
-                    ),
-                  ),
-                );
-              },
             ),
+          );
+        },
+      ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _mostrarDialogoAdicionar,
-        tooltip: 'Adicionar Experiência',
+        onPressed: _adicionarProjeto,
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class EscolaridadeScreen extends StatefulWidget {
+  const EscolaridadeScreen({super.key});
+
+  @override
+  State<EscolaridadeScreen> createState() => _EscolaridadeScreenState();
+}
+
+class _EscolaridadeScreenState extends State<EscolaridadeScreen> {
+  final List<Escolaridade> _escolaridades = [
+    Escolaridade(instituicao: 'IFC', curso: 'Medicina Veterinária'),
+    Escolaridade(
+      instituicao: 'Instituto Federal Catarinense campus - Concórdia',
+      curso: 'Técnico em Informática para internet',
+    ),
+  ];
+
+  void _adicionarEscolaridade() {
+    setState(() {
+      _escolaridades.add(
+        Escolaridade(instituicao: 'Nova Instituição', curso: 'Novo Curso'),
+      );
+    });
+  }
+
+  void _removerEscolaridade(int index) {
+    setState(() {
+      _escolaridades.removeAt(index);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Escolaridade')),
+      body: ListView.builder(
+        itemCount: _escolaridades.length,
+        itemBuilder: (context, index) {
+          final escolaridade = _escolaridades[index];
+          return Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: ListTile(
+              title: Text(escolaridade.instituicao),
+              subtitle: Text(escolaridade.curso),
+              trailing: IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: () => _removerEscolaridade(index),
+              ),
+            ),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _adicionarEscolaridade,
         child: const Icon(Icons.add),
       ),
     );
