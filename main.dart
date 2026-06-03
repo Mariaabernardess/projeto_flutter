@@ -1,278 +1,205 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/model/aluno.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
+import 'dao/aluno.dart';
 
 void main() {
-  runApp(const MyApp());
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    //padrão para qualquer app
+    //SQLite de um jeito
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi; //usa essa biblioteca
+  } else {
+    //de outro
+    databaseFactory = databaseFactoryFfiWeb;
+  }
+
+  Aluno nossoAluno = Aluno(
+    nome: "Maria Antônia Bernardes",
+    matricula: "2024312188",
+    telefone: "54999328241",
+  );
+
+  debugPrint("Começando o cadastro do aluno..");
+  insert(nossoAluno);
+  debugPrint("Acabamos o cadastro do aluno..");
+
+  debugPrint("Resultado: " + findAll().toString());
+
+  findAll().then((alunos) {
+    for (Map aluno in alunos) {
+      debugPrint("Meu aluno favorito" + aluno.toString());
+    }
+  });
+
+  runApp(
+    MaterialApp(home: TelaInicial()),
+  ); //isso que diferencia o flutter do dart.
+}
+//widget é qualquer coisa visual que apareça na tela
+//statefull é um widget que se atualiza sem atualizar a tela inteira
+//stateless é um widget que, para ser atualizado, atualiza toda a tela
+//toda classe widget precisa de um construtor (build)
+
+class TelaInicial extends StatefulWidget {
+  @override
+  State<TelaInicial> createState() => _TelaInicialState();
 }
 
-// Modelo para Experiência
-class Experiencia {
-  String empresa;
-  String periodo;
+class _TelaInicialState extends State<TelaInicial> {
+  List<Aluno> alunoList = [];
 
-  Experiencia({required this.empresa, required this.periodo});
-}
+  @override //significa que a função build, caso
+  Widget build(BuildContext context) {
+    //contexto= conjunto de variáveis que precisa herdar de outras telas, etc -> mantém informações de outras telas
+    return Scaffold(
+      //esqueleto padrão site
+      appBar: AppBar(
+        leading: Icon(Icons.menu),
+        title: Text("App da 3G"),
+        actions: [Text("Aqui vão butoes")],
+      ),
+      body: FutureBuilder(
+        //gerenciador de variáveis (executa sob mudanças) -> vai mostrar as info do banco
+        initialData: //coloca variáveis que iniciam de qualquer jeito, mesmo sem internet
+            [],
+        future: findAll(), //de onde vou pegar os dados
+        builder: (context, snapshot) {
+          //snapshot recede os dados do findall
+          switch (snapshot.connectionState) {
+            case ConnectionState.none:
+              return Text("Erro de conexão com o banco.");
+            case ConnectionState.active:
+            case ConnectionState.waiting:
+              return Center(child: CircularProgressIndicator());
+            case ConnectionState.done:
+              //obter a informação do banco.
+              List<Map<String, dynamic>> alunos =
+                  snapshot.data as List<Map<String, dynamic>>;
 
-// Modelo para Projeto
-class Projeto {
-  String titulo;
-  String dataPublicacao;
+              return ListView.builder(
+                itemCount: alunos.length,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    leading: Image.asset("images/perfil.jpg"),
+                    title: Text(alunos[index]["nome"]),
+                    subtitle: Text(" Matricula: ${alunos[index]["matricula"]}"),
+                    trailing: IconButton(
+                      onPressed: () {
+                        setState(() {
+                          deleteById(alunos[index]["id"]);
+                        });
+                        //Chamo a função de deletar
+                        //Delete
+                      },
+                      icon: Icon(Icons.delete),
+                    ),
+                  );
+                },
+              );
+          }
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.add),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => TelaFormulario()),
+          ).then(
+            (aluno) {
+              setState(() {
+                alunoList.add(aluno);
+              }); //Adiciona um aluno a lista completa de alunos
+            },
+          ); //passa o conjunto de variáveis(informações) -> no caso, a antiga tela. Faz a rota para oqa
+        },
+      ), //botão
+    );
+  }
+} //para não ter que pôr o textDirection sempre, há o materialApp, que tem pré configurações
 
-  Projeto({required this.titulo, required this.dataPublicacao});
-}
+//todo widget, quando contruído, precisa haver um direcionamento de como se apresentar (lado, direção)
 
-// Modelo para Escolaridade
-class Escolaridade {
-  String instituicao;
-  String curso;
+//para faze ruma segunda tela, criamos outra função stateless, que se sobreporará a tela inicial como uma pilha
 
-  Escolaridade({required this.instituicao, required this.curso});
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
+class TelaFormulario extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Aplicativo de Perfil',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const PerfilScreen(),
+    TextEditingController nome = TextEditingController();
+    TextEditingController telefone = TextEditingController();
+    TextEditingController matricula = TextEditingController();
+
+    return Scaffold(
+      appBar: AppBar(),
+      body: ListView(
+        padding: EdgeInsets.all(35),
+        children: [
+          Text("Nome"),
+          TextField(
+            controller: nome,
+          ), //textField trata tudo como string, então núm não tem problema
+          Text("Telefone"),
+          TextField(controller: telefone),
+          Text("Matrícula"),
+          TextField(controller: matricula),
+
+          ElevatedButton(
+            onPressed: () {
+              if (nome.text != '' &&
+                  telefone.text != '' &&
+                  matricula.text != '') {
+                //para voltar só se tudo for preenchido
+                Aluno info = Aluno(
+                  nome: nome.text,
+                  telefone: telefone.text,
+                  matricula: matricula.text,
+                );
+
+                Navigator.pop(
+                  context,
+                  info,
+                ); //o pop é pra ir pra posição abaixo -> voltar (passando as informações)
+              } else {
+                debugPrint("Preencha todos os campos para continuar...");
+              }
+            },
+            child: Text("Salvar"),
+          ),
+        ],
+      ),
     );
   }
 }
 
-class PerfilScreen extends StatelessWidget {
-  const PerfilScreen({super.key});
+class TelaAluno extends StatelessWidget {
+  final Aluno aluno; //essa função recebe somente um aluno da tela inicial
+
+  TelaAluno({required this.aluno});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Meu Perfil')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const CircleAvatar(
-              radius: 80,
-              backgroundImage: NetworkImage(
-                'images/fotoperfil.jpeg',
-              ), // Placeholder de avatar
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Maria Bernardes',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 40),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ExperienciaScreen(),
-                  ),
-                );
-              },
-              child: const Text('Experiência'),
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ProjetosScreen(),
-                  ),
-                );
-              },
-              child: const Text('Projetos'),
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const EscolaridadeScreen(),
-                  ),
-                );
-              },
-              child: const Text('Escolaridade'),
-            ),
-          ],
+      appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context);
+          },
         ),
+        title: Text(aluno.nome),
       ),
-    );
-  }
-}
-
-class ExperienciaScreen extends StatefulWidget {
-  const ExperienciaScreen({super.key});
-
-  @override
-  State<ExperienciaScreen> createState() => _ExperienciaScreenState();
-}
-
-class _ExperienciaScreenState extends State<ExperienciaScreen> {
-  final List<Experiencia> _experiencias = [
-    Experiencia(empresa: 'redatora', periodo: '2025 - presente'),
-    Experiencia(empresa: 'maquiadora', periodo: '2023 - presente'),
-    Experiencia(empresa: 'manicure', periodo: '2025 - presente'),
-  ];
-
-  void _adicionarExperiencia() {
-    setState(() {
-      _experiencias.add(
-        Experiencia(empresa: 'Nova Empresa', periodo: '2023 - Presente'),
-      );
-    });
-  }
-
-  void _removerExperiencia(int index) {
-    setState(() {
-      _experiencias.removeAt(index);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Experiência')),
-      body: ListView.builder(
-        itemCount: _experiencias.length,
-        itemBuilder: (context, index) {
-          final experiencia = _experiencias[index];
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: ListTile(
-              title: Text(experiencia.empresa),
-              subtitle: Text(experiencia.periodo),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete),
-                onPressed: () => _removerExperiencia(index),
-              ),
-            ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _adicionarExperiencia,
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
-}
-
-class ProjetosScreen extends StatefulWidget {
-  const ProjetosScreen({super.key});
-
-  @override
-  State<ProjetosScreen> createState() => _ProjetosScreenState();
-}
-
-class _ProjetosScreenState extends State<ProjetosScreen> {
-  final List<Projeto> _projetos = [
-    Projeto(titulo: 'Visux', dataPublicacao: '2025-09-10'),
-    Projeto(titulo: 'HydroSense', dataPublicacao: '2026-04-14'),
-  ];
-
-  void _adicionarProjeto() {
-    setState(() {
-      _projetos.add(
-        Projeto(titulo: 'Novo Projeto', dataPublicacao: '2024-04-20'),
-      );
-    });
-  }
-
-  void _removerProjeto(int index) {
-    setState(() {
-      _projetos.removeAt(index);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Projetos')),
-      body: ListView.builder(
-        itemCount: _projetos.length,
-        itemBuilder: (context, index) {
-          final projeto = _projetos[index];
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: ListTile(
-              title: Text(projeto.titulo),
-              subtitle: Text(projeto.dataPublicacao),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete),
-                onPressed: () => _removerProjeto(index),
-              ),
-            ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _adicionarProjeto,
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
-}
-
-class EscolaridadeScreen extends StatefulWidget {
-  const EscolaridadeScreen({super.key});
-
-  @override
-  State<EscolaridadeScreen> createState() => _EscolaridadeScreenState();
-}
-
-class _EscolaridadeScreenState extends State<EscolaridadeScreen> {
-  final List<Escolaridade> _escolaridades = [
-    Escolaridade(instituicao: 'IFC', curso: 'Medicina Veterinária'),
-    Escolaridade(
-      instituicao: 'Instituto Federal Catarinense campus - Concórdia',
-      curso: 'Técnico em Informática para internet',
-    ),
-  ];
-
-  void _adicionarEscolaridade() {
-    setState(() {
-      _escolaridades.add(
-        Escolaridade(instituicao: 'Nova Instituição', curso: 'Novo Curso'),
-      );
-    });
-  }
-
-  void _removerEscolaridade(int index) {
-    setState(() {
-      _escolaridades.removeAt(index);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Escolaridade')),
-      body: ListView.builder(
-        itemCount: _escolaridades.length,
-        itemBuilder: (context, index) {
-          final escolaridade = _escolaridades[index];
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: ListTile(
-              title: Text(escolaridade.instituicao),
-              subtitle: Text(escolaridade.curso),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete),
-                onPressed: () => _removerEscolaridade(index),
-              ),
-            ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _adicionarEscolaridade,
-        child: const Icon(Icons.add),
+      body: ListView(
+        padding: EdgeInsets.all(16),
+        children: [
+          Image.asset("images/lara.png"),
+          Text("Aluno: ${aluno.nome}"),
+          Text("Tel.: ${aluno.telefone}"),
+          Text("Matrícula: ${aluno.matricula}"),
+        ],
       ),
     );
   }
