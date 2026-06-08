@@ -22,3 +22,11 @@ Future<int> deleteById (int id) async {
   final Database db = await getDatabase();
  return db.delete("alunos", where: "id = ?", whereArgs: [id]);
 }
+Future<List<Map<String,dynamic>>> findByName(String nome) async {
+  final Database db = await getDatabase();
+
+  return await db.rawQuery(
+    "SELECT * FROM alunos WHERE nome LIKE ?",
+    ['%$nome%'],
+  );
+}
