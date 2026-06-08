@@ -17,23 +17,7 @@ void main() {
     databaseFactory = databaseFactoryFfiWeb;
   }
 
-  Aluno nossoAluno = Aluno(
-    nome: "Maria Antônia Bernardes",
-    matricula: "2024312188",
-    telefone: "54999328241",
-  );
 
-  debugPrint("Começando o cadastro do aluno..");
-  insert(nossoAluno);
-  debugPrint("Acabamos o cadastro do aluno..");
-
-  debugPrint("Resultado: " + findAll().toString());
-
-  findAll().then((alunos) {
-    for (Map aluno in alunos) {
-      debugPrint("Meu aluno favorito" + aluno.toString());
-    }
-  });
 
   runApp(
     MaterialApp(home: TelaInicial()),
@@ -50,33 +34,53 @@ class TelaInicial extends StatefulWidget {
 }
 
 class _TelaInicialState extends State<TelaInicial> {
-  List<Aluno> alunoList = [];
+  String nomeBusca = "";
 
-  @override //significa que a função build, caso
+  @override
   Widget build(BuildContext context) {
-    //contexto= conjunto de variáveis que precisa herdar de outras telas, etc -> mantém informações de outras telas
     return Scaffold(
-      //esqueleto padrão site
       appBar: AppBar(
         leading: Icon(Icons.menu),
-        title: Text("App da 3G"),
-        actions: [Text("Aqui vão butoes")],
+        title: Container(
+  height: 40,
+  decoration: BoxDecoration(
+    color: Colors.grey.shade200,
+    borderRadius: BorderRadius.circular(25),
+  ),
+  child: TextField(
+    decoration: InputDecoration(
+      hintText: "Pesquisar aluno...",
+      border: InputBorder.none,
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 10,
+      ),
+    ),
+    onChanged: (value) {
+      setState(() {
+        nomeBusca = value;
+      });
+    },
+  ),
+),
       ),
       body: FutureBuilder(
-        //gerenciador de variáveis (executa sob mudanças) -> vai mostrar as info do banco
-        initialData: //coloca variáveis que iniciam de qualquer jeito, mesmo sem internet
-            [],
-        future: findAll(), //de onde vou pegar os dados
+        initialData: [],
+        future: nomeBusca.isEmpty
+            ? findAll()
+            : findByName(nomeBusca),
         builder: (context, snapshot) {
-          //snapshot recede os dados do findall
           switch (snapshot.connectionState) {
             case ConnectionState.none:
               return Text("Erro de conexão com o banco.");
-            case ConnectionState.active:
+
             case ConnectionState.waiting:
-              return Center(child: CircularProgressIndicator());
+            case ConnectionState.active:
+              return Center(
+                child: CircularProgressIndicator(),
+              );
+
             case ConnectionState.done:
-              //obter a informação do banco.
               List<Map<String, dynamic>> alunos =
                   snapshot.data as List<Map<String, dynamic>>;
 
@@ -84,18 +88,9 @@ class _TelaInicialState extends State<TelaInicial> {
                 itemCount: alunos.length,
                 itemBuilder: (context, index) {
                   return ListTile(
-                    leading: Image.asset("images/perfil.jpg"),
                     title: Text(alunos[index]["nome"]),
-                    subtitle: Text(" Matricula: ${alunos[index]["matricula"]}"),
-                    trailing: IconButton(
-                      onPressed: () {
-                        setState(() {
-                          deleteById(alunos[index]["id"]);
-                        });
-                        //Chamo a função de deletar
-                        //Delete
-                      },
-                      icon: Icon(Icons.delete),
+                    subtitle: Text(
+                      "Matrícula: ${alunos[index]["matricula"]}",
                     ),
                   );
                 },
@@ -103,19 +98,16 @@ class _TelaInicialState extends State<TelaInicial> {
           }
         },
       ),
+    
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add),
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => TelaFormulario()),
-          ).then(
-            (aluno) {
-              setState(() {
-                alunoList.add(aluno);
-              }); //Adiciona um aluno a lista completa de alunos
-            },
-          ); //passa o conjunto de variáveis(informações) -> no caso, a antiga tela. Faz a rota para oqa
+          ).then((value) {
+            setState(() {});
+          }); //passa o conjunto de variáveis(informações) -> no caso, a antiga tela. Faz a rota para oqa
         },
       ), //botão
     );
@@ -159,10 +151,11 @@ class TelaFormulario extends StatelessWidget {
                   matricula: matricula.text,
                 );
 
-                Navigator.pop(
-                  context,
-                  info,
-                ); //o pop é pra ir pra posição abaixo -> voltar (passando as informações)
+                //vai salvar o aluno no bd
+                insert(info);
+
+
+                Navigator.pop(context); //o pop é pra ir pra posição abaixo -> voltar (passando as informações)
               } else {
                 debugPrint("Preencha todos os campos para continuar...");
               }
@@ -204,3 +197,4 @@ class TelaAluno extends StatelessWidget {
     );
   }
 }
+
